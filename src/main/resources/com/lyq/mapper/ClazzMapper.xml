@@ -1,0 +1,60 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lyq.mapper.ClazzMapper">
+    <select id="fenyeGet" parameterType="com.lyq.pojo.ClazzQueryParam" resultType="com.lyq.pojo.Clazz">
+        SELECT
+        id, name, room, begin_date, end_date,
+        master_id, subject, create_time, update_time
+        FROM clazz
+        <where>
+            <!-- 班级名称模糊查询（兼容空值） -->
+            <if test="name != null and name.trim() != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+
+            <!-- 结课时间 ≥ begin（对应前端的“范围匹配的开始时间”） -->
+            <if test="begin != null">
+                AND end_date &gt;= #{begin}
+            </if>
+
+            <!-- 结课时间 ≤ end（对应前端的“范围匹配的结束时间”） -->
+            <if test="end != null">
+                AND end_date &lt;= #{end}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!--批量删除班级信息，open和close指定执行拼接语句的开始和结束-->
+    <delete id="deleteByIds">
+        delete from clazz where id =#{ids}
+    </delete>
+
+    <insert id="addClazz">
+        insert into clazz(name, room, begin_date, end_date, master_id, subject, create_time, update_time)
+        values(#{name}, #{room}, #{beginDate}, #{endDate}, #{masterId}, #{subject}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="update" parameterType="com.lyq.pojo.Clazz">
+        UPDATE clazz
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="room != null and room != ''">room = #{room},</if>
+            <if test="beginDate != null">begin_date = #{beginDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="masterId != null">master_id = #{masterId},</if>
+            <if test="subject != null and subject != ''">subject = #{subject},</if>
+            update_time = #{updateTime},
+        </set>
+        <!-- 必须添加 WHERE 条件，根据主键更新，避免全表更新 -->
+        WHERE id = #{id}
+        <!-- 可选：增加非空校验，防止无更新字段时执行无效 SQL -->
+        <if test="name == null and room == null and beginDate == null and endDate == null and masterId == null and subject == null">
+            AND 1 = 0
+        </if>
+    </update>
+
+
+
+</mapper>

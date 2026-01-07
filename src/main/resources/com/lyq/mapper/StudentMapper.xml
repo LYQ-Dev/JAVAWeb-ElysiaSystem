@@ -1,0 +1,106 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lyq.mapper.StudentMapper">
+<!--    分页查询学生-->
+        <select id="fenyeGet" resultType="com.lyq.pojo.Student">
+            select
+            s.id,
+            s.name,
+            s.no,
+            s.gender,
+            s.phone,
+            s.degree,
+            s.id_card as idCard,
+            s.is_college as isCollege,
+            s.address,
+            s.graduation_date as graduationDate,
+            s.violation_count as violationCount,
+            s.violation_score as violationScore,
+            s.clazz_id as clazzId,
+            s.create_time as createTime,
+            s.update_time as updateTime,
+            c.name as clazzName
+            from student as s
+            left join clazz as c on s.clazz_id = c.id
+            <where>
+                <!-- 1. 姓名模糊查询（前端传name） -->
+                <if test="name != null and name != ''">
+                    s.name like concat('%',#{name},'%')
+                </if>
+                <!-- 2. 最高学历筛选（前端传degree） -->
+                <if test="degree != null">
+                    and s.degree = #{degree}
+                </if>
+                <!-- 3. 班级ID筛选（前端传clazzId） -->
+                <if test="clazzId != null">
+                    and s.clazz_id = #{clazzId}
+                </if>
+            </where>
+            order by s.create_time desc
+        </select>
+
+<!--    批量删除学生信息-->
+    <delete id="delete">
+        delete from student where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+<!--添加学生信息-->
+    <insert id="add" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO student (
+            name, no, gender, phone, id_card,
+            is_college, address, degree, graduation_date,
+            clazz_id, create_time, update_time
+        ) VALUES (
+                     #{name}, #{no}, #{gender}, #{phone}, #{idCard},
+                     #{isCollege}, #{address}, #{degree}, #{graduationDate},
+                     #{clazzId}, NOW(), NOW()
+                 )
+    </insert>
+<!--    更新学生信息-->
+    <update id="update" parameterType="com.lyq.pojo.Student">
+        UPDATE student
+        SET
+            name = #{name},
+            no = #{no},
+            gender = #{gender},
+            phone = #{phone},
+            id_card = #{idCard},
+            is_college = #{isCollege},
+            address = #{address},
+            degree = #{degree},
+            graduation_date = #{graduationDate},
+            clazz_id = #{clazzId},
+            violation_count = #{violationCount},
+            violation_score = #{violationScore},
+            update_time = NOW()
+        WHERE
+            id = #{id}
+    </update>
+
+<!--    管理学生扣分-->
+    <update id="updateData">
+        UPDATE student
+        SET
+            violation_score = #{violationScore},
+            update_time = NOW()
+        WHERE
+            id = #{id}
+    </update>
+
+<!--    统计学生学历-->
+    <select id="countStudentDegree" resultType="map">
+        select
+            (case degree when 1 then '初中'
+                      when 2 then '高中'
+                      when 3 then '大专'
+                      when 4 then '本科'
+                      when 5 then '研究生'
+                      else '其他' end)  name,
+            count(*) total
+        from student group by degree
+        order by total
+    </select>
+</mapper>
