@@ -1,6 +1,8 @@
 package com.lyq.filter;
 
+import com.lyq.utils.CurrentHolder;
 import com.lyq.utils.JwtUtils;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,7 +46,26 @@ public class TokenFilter implements Filter {
 
         //5. 解析token，如果解析失败，返回错误结果（未登录）。
         try {
-            JwtUtils.parseJWT(jwt); //解析令牌
+            Claims claims = JwtUtils.parseJWT(jwt); //解析令牌，并拿出其中的数据
+            // 1. 获取用户id（直接强转，避免多余的toString，同时加空值判断）
+            Integer empId = (Integer) claims.get("id");
+            // 2. 获取用户名
+            String username = (String) claims.get("username");
+
+            // 打印正确的解析结果
+            log.info("解析到用户名：{}", username);
+            log.info("解析到用户id：{}", empId);
+
+            // 空值校验：如果解析不到用户ID，直接返回未登录
+            if (empId == null) {
+                log.error("JWT令牌中未获取到用户ID");
+                response.setStatus(HttpStatus.SC_UNAUTHORIZED);
+                return;
+            }
+            //接下来调用线程工具类存入这个获取到的id（因为要实现写入操作日志的时候记录操作人员ID）
+            CurrentHolder.setCurrentId(empId);
+            log.info("token解析成功, 放行");
+
         } catch (Exception e) {
             e.printStackTrace();
             log.info("解析令牌失败, 返回错误结果");
@@ -55,6 +76,9 @@ public class TokenFilter implements Filter {
         //6. 放行。
         log.info("令牌合法, 放行");
         chain.doFilter(request , response);
+
+        //7. 清空当前线程绑定的id
+        CurrentHolder.remove();
     }
 
 }
