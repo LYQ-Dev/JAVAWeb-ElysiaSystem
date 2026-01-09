@@ -1,5 +1,6 @@
 package com.lyq.controller;
 
+import com.lyq.anno.LogOperation;
 import com.lyq.pojo.*;
 import com.lyq.service.ClazzService;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,7 @@ public class ClazzController {
     /*
     添加班级
      */
+    @LogOperation   //aop 切面注解，具体操作为记录日志到数据库中
     @PostMapping
     public Result addClazz(@RequestBody Clazz clazz){
         clazzService.addClazz(clazz);
